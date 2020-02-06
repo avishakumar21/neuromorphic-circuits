@@ -21,7 +21,7 @@ connected = False
 
 ## open the serial port that your ardiono 
 ## is connected to.
-ser = serial.Serial("/dev/ttyACM0", 115200, timeout=0.5); # Establish the connection on a specific port
+ser = serial.Serial("/dev/ttyACM1", 115200, timeout=0.5); # Establish the connection on a specific port
 
 
 print(ser.readline())

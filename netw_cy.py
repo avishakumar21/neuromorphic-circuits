@@ -203,7 +203,7 @@ class Network(object):
             if self.p["stat"] == 'L':
                 self.syn_wght_time[:, :, i] = self.migr_syn_obj.syn_wght.cpu().numpy()
             '''
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
 
         if self.p["stat"] == 'B4L':
             # import pdb;pdb.set_trace()

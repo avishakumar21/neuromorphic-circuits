@@ -239,7 +239,6 @@ class PGLIF(LIFneuron):
         self.v_prev[:, :] = self.v[:, :]
         # self.v_prf[:, self.tstep] = self.v[:]
 
-
 class MitralLIF(LIFneuron):
     """Mitral Cell LIF neuron. """
 
@@ -264,15 +263,29 @@ class MitralLIF(LIFneuron):
         self.r = 1.
 
         # if iscuda:
+        '''
         self.v = t.FloatTensor(self.p["batchsize"], self.num_mi).fill_(0)
         self.v_prev = t.FloatTensor(self.p["batchsize"], self.num_mi).fill_(0)
         self.count = t.FloatTensor(self.p["batchsize"], self.num_mi).fill_(0)
         self.t_on = t.FloatTensor(self.p["batchsize"], self.num_mi).fill_(0)
         self.spike = t.FloatTensor(self.p["batchsize"], self.num_mi).fill_(0)
         self.spk_time = t.FloatTensor(self.p["batchsize"], self.num_mi).fill_(0)
-
+        '''
+        self.v = np.zeros((self.p["batchsize"], self.num_mi))
+        self.v_prev = np.zeros((self.p["batchsize"], self.num_mi))
+        self.count = np.zeros((self.p["batchsize"], self.num_mi))
+        self.t_on = np.zeros((self.p["batchsize"], self.num_mi))
+        self.spike = np.zeros((self.p["batchsize"], self.num_mi))
+        self.spk_time = np.zeros((self.p["batchsize"], self.num_mi))
         # self.v_mi = t.FloatTensor(self.num_mi, self.p["shape"]).fill_(0)
         # self.gamma_prf = t.FloatTensor(self.num_mi, int(self.T / self.dt)).fill_(0)
+
+        self.v_cpu = torch.from_numpy(self.v).float().cpu()
+        self.v_prev_cpu = torch.from_numpy(self.v_prev).float().cpu()
+        self.count_cpu = torch.from_numpy(self.count).float().cpu()
+        self.t_on_cpu = torch.from_numpy(self.t_on).float().cpu()
+        self.spike_cpu = torch.from_numpy(self.spike).float().cpu()
+        self.spk_time_cpu = torch.from_numpy(self.spk_time).float().cpu()
 
     def neu_simul(self, mi_v_th, train_data, tstep):
 
@@ -282,7 +295,6 @@ class MitralLIF(LIFneuron):
         self.r = self.gamma()
         # self.r = self.r_m
         self.rungekutta_integrate(mi_v_th, train_data)
-    
 
     def gamma(self):
         """
@@ -300,25 +312,26 @@ class MitralLIF(LIFneuron):
     def rungekutta_integrate(self, mi_v_th, data):
 
         train_data = data
+        mi_v_th = mi_v_th.cpu().numpy()
 
         if not ((self.tstep * self.dt) % self.binL):
-            self.v_prev[:, :] = 0.
+            self.v_prev_cpu[:, :] = 0.
         self.spike[:, :] = 0
-        nospk_idx = torch.nonzero(self.t_on[:, :] >= self.tstep * self.dt)
+        nospk_idx = torch.nonzero(self.t_on_cpu[:, :] >= self.tstep * self.dt)
         if nospk_idx.numel():
             nospk_idx = torch.squeeze(nospk_idx, 1)
         '''
         Runge-Kutta Integration method.
         v' = (-self.v_prev + self.i_inp * (self.r))/self.tau
         '''
-        k_1 = ((-self.v_prev[:, :] + train_data[:, :] * self.r)/self.tau)
-        k_2 = ((-(self.v_prev[:, :] + ((self.dt / 2) * k_1[:, :])) +
+        k_1 = ((-self.v_prev_cpu[:, :] + train_data[:, :] * self.r)/self.tau)
+        k_2 = ((-(self.v_prev_cpu[:, :] + ((self.dt / 2) * k_1[:, :])) +
                 train_data[:, :] * self.r)/self.tau)
-        k_3 = ((-(self.v_prev[:, :] + ((self.dt / 2) * k_2[:, :])) +
+        k_3 = ((-(self.v_prev_cpu[:, :] + ((self.dt / 2) * k_2[:, :])) +
                 train_data[:, :] * self.r)/self.tau)
-        k_4 = ((-(self.v_prev[:, :] + (self.dt * k_3[:, :])) +
+        k_4 = ((-(self.v_prev_cpu[:, :] + (self.dt * k_3[:, :])) +
                 train_data[:, :] * self.r)/self.tau)
-        self.v[:] = (self.v_prev[:, :] + (self.dt / 6) *
+        self.v_cpu[:] = (self.v_prev_cpu[:, :] + (self.dt / 6) *
                      (k_1[:, :] + 2 * k_2[:, :] + 2 *
                       k_3[:, :] + k_4[:, :]))
 
@@ -331,30 +344,25 @@ class MitralLIF(LIFneuron):
             self.v[nospk_idx[:, 0], nospk_idx[:, 1]] = 0.
         self.v_prev[:, :] = self.v[:, :]
 
-        spk_idx = torch.nonzero(self.v[:, :] >= mi_v_th[:])
+        # spk_idx = torch.nonzero(self.v[:, :] >= mi_v_th[:])
         # spk_idx = (self.v[:] >= self.v_th).nonzero()
-    
+        spk_idx = np.nonzero(self.v[:, :] >= mi_v_th[:])
+        '''
         if spk_idx.numel():
-            
             spk_idx = torch.squeeze(spk_idx, 1)
-            
             self.v_prev[spk_idx[:, 0], spk_idx[:, 1]] = 0.
-            
-            print(self.v.shape, spk_idx.shape, list(sorted(spk_idx[:, 0].numpy())), list(sorted(spk_idx[:, 1].numpy())), self.v_spike, spk_idx[:, 0].numpy(), spk_idx[:, 1].numpy())
-            self.v[list(sorted(spk_idx[:, 0].numpy())), list(sorted(spk_idx[:, 1].numpy()))] += self.v_spike
-            '''
-            self.v[spk_idx[:, 0], spk_idx[:, 1]] += self.v_spike
-            
+            self.v[spk_idx[:, 0], spk_idx[:, 1]] = self.v[spk_idx[:, 0], spk_idx[:, 1]] + self.v_spike
             self.t_on[spk_idx[:, 0], spk_idx[:, 1]] = ((self.tstep * self.dt) + (
                     self.binL - ((self.tstep * self.dt) % self.binL)))
-            
-            self.count[spk_idx[:, 0], spk_idx[:, 1]] += 1
-            '''
+            self.count[spk_idx[:, 0], spk_idx[:, 1]] = self.count[spk_idx[:, 0], spk_idx[:, 1]] + 1
             self.spike[spk_idx[:, 0], spk_idx[:, 1]] = 1
-            
             self.spk_time[spk_idx[:, 0], spk_idx[:, 1]] = self.tstep * self.dt
-        
             # import pdb;pdb.set_trace()
+        '''
+        if bool(spk_idx[0]):
+            self.v[spk_idx[0], spk_idx[1]] = self.v[spk_idx[0], spk_idx[1]] + self.v_spike
+            import pdb;pdb.set_trace()
+
         # self.v_mi[:, self.tstep] = self.v[:]
 
 
