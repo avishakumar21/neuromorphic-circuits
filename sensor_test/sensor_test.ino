@@ -21,7 +21,7 @@ int PinPWM3 = 10;
 int PinPWM4 = 9;
 
 // Initialize input readings
-int ch1 = 0 ;
+int ch1 = 0;
 int ch2 = 0;
 int ch3 = 0;
 int ch4 = 0;
@@ -76,22 +76,12 @@ int CSi6 = 53;
 // U/D' 
 int pinUD = 30;
 
-// Function that printf and related will use to print
-int serial_putchar(char c, FILE* f) {
-    if (c == '\n') serial_putchar('\r', f);
-    return Serial.write(c) == 1? 0 : 1;
-}
-
-FILE serial_stdout;
 
 void setup(){
   // initialize serial communication.
   Serial.begin(115200); // set the baud rate
   Serial.println("Ready"); // print "Ready" once
   
-  // Set up stdout
-  fdev_setup_stream(&serial_stdout, serial_putchar, NULL, _FDEV_SETUP_WRITE);
-  stdout = &serial_stdout;
 
   printf("printing voltage values of 16 mox sensors\n");
   
@@ -238,9 +228,72 @@ void Init_R(int cha)
 void loop() {
 
   if (millis()%1000==0){ // print every one second 
-    int voltage1 = analogRead(ACh1);
-    printf("millis(): %ld\tsensor1 voltage: %ld\n", millis(), voltage1);
-    delay(1);    
+    
+      int lectura;
+  
+      Serial.print("Ch1:");
+      lectura = analogRead(ACh1);
+      Serial.print(lectura);
+      
+      Serial.print("; Ch2:");
+      lectura = analogRead(ACh2);
+      Serial.print(lectura);  
+    
+      Serial.print("; Ch3:");
+      lectura = analogRead(ACh3);
+      Serial.print(lectura);
+      
+      Serial.print("; Ch4:");
+      lectura = analogRead(ACh4);
+      Serial.print(lectura);  
+    
+      Serial.print("; Ch5:");
+      lectura = analogRead(ACh5);
+      Serial.print(lectura); 
+      
+      Serial.print("; Ch6:");
+      lectura = analogRead(ACh6);
+      Serial.print(lectura); 
+    
+      Serial.print("; Ch7:");
+      lectura = analogRead(ACh7);
+      Serial.print(lectura); 
+      
+      Serial.print("; Ch8:");
+      lectura = analogRead(ACh8);
+      Serial.print(lectura);
+    
+      Serial.print(" Ch9:");
+      lectura = analogRead(ACh9);
+      Serial.print(lectura);
+      
+      Serial.print("; Ch10:");
+      lectura = analogRead(ACh10);
+      Serial.print(lectura);  
+    
+      Serial.print("; Ch11:");
+      lectura = analogRead(ACh11);
+      Serial.print(lectura);
+      
+      Serial.print("; Ch12:");
+      lectura = analogRead(ACh12);
+      Serial.print(lectura);  
+    
+      Serial.print("; Ch13:");
+      lectura = analogRead(ACh13);
+      Serial.print(lectura); 
+      
+      Serial.print("; Ch14:");
+      lectura = analogRead(ACh14);
+      Serial.print(lectura); 
+    
+      Serial.print("; Ch15:");
+      lectura = analogRead(ACh15);
+      Serial.print(lectura); 
+      
+      Serial.print("; Ch16:");
+      lectura = analogRead(ACh16);
+      Serial.println(lectura);    
   }
 }
 
